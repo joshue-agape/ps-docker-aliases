@@ -1,3 +1,4 @@
+. "$HOME\.config\alias\docker-commandes\docs.ps1"
 
 
 # Description:
