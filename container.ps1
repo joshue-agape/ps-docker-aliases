@@ -888,7 +888,7 @@ function dPauseContainer {
 #
 # Usage:
 # dUnpauseContainer
-# dUnpauseContainer -ContainerName "my-container"
+# dUnpauseContainer "my-container"
 function dUnpauseContainer {
     param(
         [string]$ContainerName
@@ -932,7 +932,7 @@ function dUnpauseContainer {
 #
 # Usage:
 # dExportContainer
-# dExportContainer -ContainerName "my-container"
+# dExportContainer "my-container"
 # dExportContainer -ContainerName "my-container" -OutputFile "backup.tar"
 function dExportContainer {
     param(
@@ -1018,7 +1018,7 @@ function dCommitContainer {
 #
 # Usage:
 # dDiffContainer
-# dDiffContainer -ContainerName "my-container"
+# dDiffContainer "my-container"
 function dDiffContainer {
     param(
         [string]$ContainerName
@@ -1079,5 +1079,55 @@ function dCpContainer {
         Write-Host "✅ Copy completed successfully!" -ForegroundColor Green
     } else {
         Write-Host "❌ Copy operation failed." -ForegroundColor Red
+    }
+}
+
+
+# Description:
+# Displays a complete reference documentation for all Docker container helper commands
+# Provides a formatted table with command usage and descriptions
+# Acts as an in-terminal cheat sheet for the Docker PowerShell toolkit
+#
+# Usage:
+# dContainerDocs
+function dContainerDocs {
+    $colCommandWidth = 45
+    $colDescWidth    = 75
+
+    $commands = @(
+        @{Command="dContainers [-all]"; Description="List Docker containers (running by default, all with -all)"},
+        @{Command="dRunContainer <image> [name] [-Detach] [-Ports] [-Volumes]"; Description="Run a container from a local image with optional configuration"},
+        @{Command="dCreateContainer <image> [name]"; Description="Create a container without starting it"},
+        @{Command="dStartContainer [name]"; Description="Start a container"},
+        @{Command="dStopContainer [name]"; Description="Stop a running container"},
+        @{Command="dRestartContainer [name]"; Description="Restart a container"},
+        @{Command="dKillContainer [name]"; Description="Force stop (kill) a container"},
+        @{Command="dRemoveContainer [name] [-Force]"; Description="Remove a container"},
+        @{Command="dLogsContainer [name] [-Follow]"; Description="Show container logs (use -Follow to stream)"},
+        @{Command="dExecContainer [name] [command]"; Description="Execute a command inside a running container"},
+        @{Command="dAttachContainer [name]"; Description="Attach to a container terminal"},
+        @{Command="dTopContainer [name]"; Description="Show running processes inside a container"},
+        @{Command="dStatsContainer"; Description="Show real-time resource usage stats for all containers"},
+        @{Command="dWaitContainer [name]"; Description="Wait until a container stops"},
+        @{Command="dRenameContainer [name] [newName]"; Description="Rename a container"},
+        @{Command="dUpdateContainer [name] [options]"; Description="Update container resources (CPU, memory, etc.)"},
+        @{Command="dPauseContainer [name]"; Description="Pause a running container"},
+        @{Command="dUnpauseContainer [name]"; Description="Resume a paused container"},
+        @{Command="dExportContainer [name] [file]"; Description="Export container filesystem to a tar file"},
+        @{Command="dCommitContainer [name] [image]"; Description="Create a new image from a container"},
+        @{Command="dDiffContainer [name]"; Description="Show filesystem changes inside a container"},
+        @{Command="dCpContainer <source> <destination>"; Description="Copy files between host and container"}
+    )
+
+    $headerCommand = "COMMAND".PadRight($colCommandWidth)
+    $headerDesc    = "DESCRIPTION".PadRight($colDescWidth)
+
+    Write-Host $headerCommand$headerDesc -ForegroundColor Cyan
+    Write-Host ("-" * ($colCommandWidth + $colDescWidth))
+
+    foreach ($cmd in $commands) {
+        $cmdName = $cmd.Command.PadRight($colCommandWidth)
+        $cmdDesc = $cmd.Description.PadRight($colDescWidth)
+        Write-Host "$cmdName$cmdDesc"
     }
 }
