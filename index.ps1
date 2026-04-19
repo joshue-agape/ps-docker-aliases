@@ -61,6 +61,8 @@ function dPruneSystem {
 
 # Usage:
 # dLogin
+# dLogin
+# dLogin "ghcr.io"
 # dLogin -Registry "ghcr.io"
 function dLogin {
     param(
@@ -92,6 +94,8 @@ function dLogin {
 
 # Usage:
 # dLogout
+# dLogout
+# dLogout "ghcr.io"
 # dLogout -Registry "ghcr.io"
 function dLogout {
     param(
