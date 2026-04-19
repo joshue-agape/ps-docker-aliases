@@ -212,3 +212,38 @@ function dComposeRestart {
 
     docker compose -f $composeFile restart
 }
+
+
+# Description:
+# Displays a complete reference documentation for all Docker Compose helper commands
+# Acts as an in-terminal cheat sheet for the Compose section of the toolkit
+# Provides aligned formatting for better readability
+#
+# Usage:
+# dComposeDocs
+function dComposeDocs {
+    $colCommandWidth = 45
+    $colDescWidth    = 75
+
+    $commands = @(
+        @{Command="dComposes [path]"; Description="List Docker Compose services"},
+        @{Command="dComposeUp [path] [-Detached]"; Description="Start Docker Compose services (use -Detached for background mode)"},
+        @{Command="dComposeDown [path]"; Description="Stop and remove Docker Compose services"},
+        @{Command="dComposeBuild [path]"; Description="Build Docker Compose services images"},
+        @{Command="dComposeLogs [path] [service] [-Follow]"; Description="Show logs for services (use -Follow for streaming mode)"},
+        @{Command="dComposeExec [path] [service] [command]"; Description="Execute a command inside a service (default: bash)"},
+        @{Command="dComposeRestart [path]"; Description="Restart Docker Compose services"}
+    )
+
+    $headerCommand = "COMMAND".PadRight($colCommandWidth)
+    $headerDesc    = "DESCRIPTION".PadRight($colDescWidth)
+
+    Write-Host $headerCommand$headerDesc -ForegroundColor Cyan
+    Write-Host ("-" * ($colCommandWidth + $colDescWidth))
+
+    foreach ($cmd in $commands) {
+        $cmdName = $cmd.Command.PadRight($colCommandWidth)
+        $cmdDesc = $cmd.Description.PadRight($colDescWidth)
+        Write-Host "$cmdName$cmdDesc"
+    }
+}
