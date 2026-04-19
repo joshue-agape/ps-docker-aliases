@@ -1,6 +1,7 @@
 . "$HOME\.config\alias\docker-commandes\docs.ps1"
 . "$HOME\.config\alias\docker-commandes\image.ps1"
 . "$HOME\.config\alias\docker-commandes\container.ps1"
+. "$HOME\.config\alias\docker-commandes\compose.ps1"
 
 
 # Description:
