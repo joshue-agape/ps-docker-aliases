@@ -541,3 +541,543 @@ function dLogsContainer {
 }
 
 
+# Description:
+# Executes a command inside a running Docker container
+# Defaults to opening an interactive bash shell
+# Lists running containers if no container is provided
+# Validates that the container is currently running before execution
+#
+# Usage:
+# dExecContainer
+# dExecContainer "my-container"
+# dExecContainer -ContainerName "my-container" -Command "bash"
+# dExecContainer -ContainerName "my-container" -Command "sh"
+# dExecContainer -ContainerName "my-container" -Command "ls"
+function dExecContainer {
+    param(
+        [string]$ContainerName,
+        [string]$Command = "bash"
+    )
+
+    # Prompt if no container provided
+    if ([string]::IsNullOrWhiteSpace($ContainerName)) {
+        Write-Host "📦 Running containers:" -ForegroundColor Cyan
+        docker ps --format "table {{.Names}}\t{{.Status}}"
+        Write-Host ""
+
+        $ContainerName = Read-Host "Enter the container name or ID to execute a command"
+    }
+
+    # Validate input
+    if ([string]::IsNullOrWhiteSpace($ContainerName)) {
+        Write-Host "❌ No container name provided." -ForegroundColor Red
+        return
+    }
+
+    # Get running containers
+    $runningContainers = docker ps --format "{{.Names}}"
+
+    # Validate container is running
+    if (-not ($runningContainers -contains $ContainerName)) {
+        Write-Host "❌ Container '$ContainerName' is not running." -ForegroundColor Red
+        return
+    }
+
+    Write-Host "💻 Executing command in container '$ContainerName': $Command" -ForegroundColor Cyan
+
+    # Execute command
+    docker exec -it $ContainerName $Command
+}
+
+
+# Description:
+# Attaches the current terminal to a running Docker container
+# Allows viewing real-time container output (stdout/stderr)
+# Lists running containers if no container is provided
+# Validates that the container is currently running before attaching
+#
+# Usage:
+# dAttachContainer
+# dAttachContainer "my-container"
+function dAttachContainer {
+    param(
+        [string]$ContainerName
+    )
+
+    # Prompt if no container provided
+    if ([string]::IsNullOrWhiteSpace($ContainerName)) {
+        Write-Host "📦 Running containers:" -ForegroundColor Cyan
+        docker ps --format "table {{.Names}}\t{{.Status}}"
+        Write-Host ""
+
+        $ContainerName = Read-Host "Enter the container name or ID to attach"
+    }
+
+    # Validate input
+    if ([string]::IsNullOrWhiteSpace($ContainerName)) {
+        Write-Host "❌ No container name provided." -ForegroundColor Red
+        return
+    }
+
+    # Get running containers
+    $runningContainers = docker ps --format "{{.Names}}"
+
+    # Validate container is running
+    if (-not ($runningContainers -contains $ContainerName)) {
+        Write-Host "❌ Container '$ContainerName' is not running." -ForegroundColor Red
+        return
+    }
+
+    Write-Host "🔗 Attaching to container '$ContainerName'..." -ForegroundColor Cyan
+
+    # Attach to container
+    docker attach $ContainerName
+}
+
+
+# Description:
+# Displays running processes inside a Docker container
+# Uses 'docker top' to show process information
+# Lists containers if no name or ID is provided
+# Validates that the container exists before executing
+#
+# Usage:
+# dTopContainer
+# dTopContainer -ContainerName "my-container"
+function dTopContainer {
+    param(
+        [string]$ContainerName
+    )
+
+    # Prompt if no container provided
+    if ([string]::IsNullOrWhiteSpace($ContainerName)) {
+        Write-Host "📦 Running containers:" -ForegroundColor Cyan
+        docker ps --format "table {{.Names}}\t{{.Status}}"
+        Write-Host ""
+
+        $ContainerName = Read-Host "Enter the container name or ID to view processes"
+    }
+
+    # Validate input
+    if ([string]::IsNullOrWhiteSpace($ContainerName)) {
+        Write-Host "❌ No container name provided." -ForegroundColor Red
+        return
+    }
+
+    # Get all containers
+    $allContainers = docker ps -a --format "{{.Names}}"
+
+    # Validate container exists
+    if (-not ($allContainers -contains $ContainerName)) {
+        Write-Host "❌ Container '$ContainerName' not found." -ForegroundColor Red
+        return
+    }
+
+    Write-Host "📊 Processes for container '$ContainerName':" -ForegroundColor Cyan
+
+    # Show processes
+    docker top $ContainerName
+}
+
+
+# Description:
+# Displays live resource usage statistics for all Docker containers
+# Equivalent to 'docker stats' (CPU, memory, network, IO)
+# Runs continuously until manually stopped (Ctrl + C)
+#
+# Usage:
+# dStatsContainer
+function dStatsContainer {
+    Write-Host "📊 Docker container stats (Press Ctrl + C to exit)..." -ForegroundColor Cyan
+    docker stats
+}
+
+
+# Description:
+# Waits until a Docker container stops running
+# Blocks execution until the container exits
+# Useful for monitoring batch jobs or one-shot containers
+# Lists all containers if no name or ID is provided
+#
+# Usage:
+# dWaitContainer
+# dWaitContainer -ContainerName "my-container"
+function dWaitContainer {
+    param(
+        [string]$ContainerName
+    )
+
+    # Prompt if no container provided
+    if ([string]::IsNullOrWhiteSpace($ContainerName)) {
+        Write-Host "📦 Running containers:" -ForegroundColor Cyan
+        docker ps --format "table {{.Names}}\t{{.Status}}"
+        Write-Host ""
+
+        $ContainerName = Read-Host "Enter the container name or ID to wait for"
+    }
+
+    # Validate input
+    if ([string]::IsNullOrWhiteSpace($ContainerName)) {
+        Write-Host "❌ No container name provided." -ForegroundColor Red
+        return
+    }
+
+    # Get all containers
+    $allContainers = docker ps -a --format "{{.Names}}"
+
+    # Validate container exists
+    if (-not ($allContainers -contains $ContainerName)) {
+        Write-Host "❌ Container '$ContainerName' not found." -ForegroundColor Red
+        return
+    }
+
+    Write-Host "⏳ Waiting for container '$ContainerName' to stop..." -ForegroundColor Yellow
+
+    # Wait for container to stop
+    docker wait $ContainerName | Out-Null
+
+    Write-Host "✅ Container '$ContainerName' has stopped." -ForegroundColor Green
+}
+
+
+# Description:
+# Renames an existing Docker container
+# Lists all containers if no name is provided
+# Validates that the container exists before renaming
+#
+# Usage:
+# dRenameContainer
+# dRenameContainer -ContainerName "old-name" -NewName "new-name"
+function dRenameContainer {
+    param(
+        [string]$ContainerName,
+        [string]$NewName
+    )
+
+    if ([string]::IsNullOrWhiteSpace($ContainerName)) {
+        Write-Host "📦 Available containers:" -ForegroundColor Cyan
+        docker ps -a --format "table {{.Names}}\t{{.Status}}"
+        Write-Host ""
+        $ContainerName = Read-Host "Enter the container name or ID to rename"
+    }
+
+    if ([string]::IsNullOrWhiteSpace($NewName)) {
+        $NewName = Read-Host "Enter the new container name"
+    }
+
+    if ([string]::IsNullOrWhiteSpace($ContainerName) -or [string]::IsNullOrWhiteSpace($NewName)) {
+        Write-Host "❌ Missing container name or new name." -ForegroundColor Red
+        return
+    }
+
+    $allContainers = docker ps -a --format "{{.Names}}"
+
+    if (-not ($allContainers -contains $ContainerName)) {
+        Write-Host "❌ Container '$ContainerName' not found." -ForegroundColor Red
+        return
+    }
+
+    Write-Host "✏️ Renaming '$ContainerName' → '$NewName'..." -ForegroundColor Cyan
+
+    docker rename $ContainerName $NewName
+
+    if ($LASTEXITCODE -eq 0) {
+        Write-Host "✅ Container renamed successfully!" -ForegroundColor Green
+    } else {
+        Write-Host "❌ Failed to rename container '$ContainerName'." -ForegroundColor Red
+    }
+}
+
+
+# Description:
+# Updates a Docker container configuration (CPU, memory, restart policy, etc.)
+# Uses 'docker update' command
+# Lists containers if none provided
+#
+# Usage:
+# dUpdateContainer
+# dUpdateContainer -ContainerName "my-container" -Options "--memory 512m"
+function dUpdateContainer {
+    param(
+        [string]$ContainerName,
+        [string]$Options
+    )
+
+    if ([string]::IsNullOrWhiteSpace($ContainerName)) {
+        Write-Host "📦 Available containers:" -ForegroundColor Cyan
+        docker ps -a --format "table {{.Names}}\t{{.Status}}"
+        Write-Host ""
+        $ContainerName = Read-Host "Enter the container name or ID to update"
+    }
+
+    if ([string]::IsNullOrWhiteSpace($Options)) {
+        $Options = Read-Host "Enter update options (e.g. --memory 512m)"
+    }
+
+    if ([string]::IsNullOrWhiteSpace($ContainerName) -or [string]::IsNullOrWhiteSpace($Options)) {
+        Write-Host "❌ Missing container name or options." -ForegroundColor Red
+        return
+    }
+
+    $allContainers = docker ps -a --format "{{.Names}}"
+
+    if (-not ($allContainers -contains $ContainerName)) {
+        Write-Host "❌ Container '$ContainerName' not found." -ForegroundColor Red
+        return
+    }
+
+    Write-Host "⚙️ Updating container '$ContainerName'..." -ForegroundColor Cyan
+
+    docker update $Options $ContainerName
+
+    if ($LASTEXITCODE -eq 0) {
+        Write-Host "✅ Container updated successfully!" -ForegroundColor Green
+    } else {
+        Write-Host "❌ Failed to update container '$ContainerName'." -ForegroundColor Red
+    }
+}
+
+
+# Description:
+# Pauses a running Docker container (freezes all processes)
+# Container remains in memory but execution is suspended
+# Lists running containers if none provided
+#
+# Usage:
+# dPauseContainer
+# dPauseContainer -ContainerName "my-container"
+function dPauseContainer {
+    param(
+        [string]$ContainerName
+    )
+
+    if ([string]::IsNullOrWhiteSpace($ContainerName)) {
+        Write-Host "📦 Running containers:" -ForegroundColor Cyan
+        docker ps --format "table {{.Names}}\t{{.Status}}"
+        Write-Host ""
+        $ContainerName = Read-Host "Enter the container name or ID to pause"
+    }
+
+    if ([string]::IsNullOrWhiteSpace($ContainerName)) {
+        Write-Host "❌ No container name provided." -ForegroundColor Red
+        return
+    }
+
+    $runningContainers = docker ps --format "{{.Names}}"
+
+    if (-not ($runningContainers -contains $ContainerName)) {
+        Write-Host "❌ Container '$ContainerName' is not running." -ForegroundColor Red
+        return
+    }
+
+    Write-Host "⏸️ Pausing container '$ContainerName'..." -ForegroundColor Cyan
+
+    docker pause $ContainerName
+
+    if ($LASTEXITCODE -eq 0) {
+        Write-Host "✅ Container paused successfully!" -ForegroundColor Green
+    } else {
+        Write-Host "❌ Failed to pause container '$ContainerName'." -ForegroundColor Red
+    }
+}
+
+
+# Description:
+# Resumes a paused Docker container
+# Lists paused containers if no name is provided
+#
+# Usage:
+# dUnpauseContainer
+# dUnpauseContainer -ContainerName "my-container"
+function dUnpauseContainer {
+    param(
+        [string]$ContainerName
+    )
+
+    if ([string]::IsNullOrWhiteSpace($ContainerName)) {
+        Write-Host "📦 Paused containers:" -ForegroundColor Cyan
+
+        $paused = docker ps --filter "status=paused" --format "table {{.Names}}\t{{.Status}}"
+
+        if ($paused) {
+            Write-Host $paused
+        } else {
+            Write-Host "❌ No paused containers found." -ForegroundColor Yellow
+        }
+
+        Write-Host ""
+        $ContainerName = Read-Host "Enter the container name or ID to unpause"
+    }
+
+    if ([string]::IsNullOrWhiteSpace($ContainerName)) {
+        Write-Host "❌ No container name provided." -ForegroundColor Red
+        return
+    }
+
+    Write-Host "▶️ Resuming container '$ContainerName'..." -ForegroundColor Cyan
+
+    docker unpause $ContainerName
+
+    if ($LASTEXITCODE -eq 0) {
+        Write-Host "✅ Container '$ContainerName' resumed successfully!" -ForegroundColor Green
+    } else {
+        Write-Host "❌ Failed to unpause container '$ContainerName'." -ForegroundColor Red
+    }
+}
+
+
+# Description:
+# Exports a Docker container filesystem into a .tar archive
+# Does NOT include image metadata (use docker commit for images)
+#
+# Usage:
+# dExportContainer
+# dExportContainer -ContainerName "my-container"
+# dExportContainer -ContainerName "my-container" -OutputFile "backup.tar"
+function dExportContainer {
+    param(
+        [string]$ContainerName,
+        [string]$OutputFile
+    )
+
+    if ([string]::IsNullOrWhiteSpace($ContainerName)) {
+        Write-Host "📦 Available containers:" -ForegroundColor Cyan
+        docker ps -a --format "table {{.Names}}\t{{.Status}}"
+        Write-Host ""
+
+        $ContainerName = Read-Host "Enter the container name or ID to export"
+    }
+
+    if ([string]::IsNullOrWhiteSpace($OutputFile)) {
+        $OutputFile = "$ContainerName.tar"
+    }
+
+    if ([string]::IsNullOrWhiteSpace($ContainerName)) {
+        Write-Host "❌ No container name provided." -ForegroundColor Red
+        return
+    }
+
+    Write-Host "📤 Exporting container '$ContainerName'..." -ForegroundColor Cyan
+
+    docker export $ContainerName -o $OutputFile
+
+    if ($LASTEXITCODE -eq 0) {
+        Write-Host "✅ Container exported to '$OutputFile' successfully!" -ForegroundColor Green
+    } else {
+        Write-Host "❌ Failed to export container '$ContainerName'." -ForegroundColor Red
+    }
+}
+
+
+# Description:
+# Creates a new Docker image from a container state
+# Equivalent to saving container changes as a new image
+#
+# Usage:
+# dCommitContainer
+# dCommitContainer -ContainerName "my-container" -ImageName "myapp:latest"
+function dCommitContainer {
+    param(
+        [string]$ContainerName,
+        [string]$ImageName
+    )
+
+    if ([string]::IsNullOrWhiteSpace($ContainerName)) {
+        Write-Host "📦 Available containers:" -ForegroundColor Cyan
+        docker ps -a --format "table {{.Names}}\t{{.Status}}"
+        Write-Host ""
+
+        $ContainerName = Read-Host "Enter the container name or ID to commit"
+    }
+
+    if ([string]::IsNullOrWhiteSpace($ImageName)) {
+        $ImageName = Read-Host "Enter the new image name (e.g. myapp:latest)"
+    }
+
+    if ([string]::IsNullOrWhiteSpace($ContainerName) -or [string]::IsNullOrWhiteSpace($ImageName)) {
+        Write-Host "❌ Missing container name or image name." -ForegroundColor Red
+        return
+    }
+
+    Write-Host "📸 Committing container '$ContainerName' → '$ImageName'..." -ForegroundColor Cyan
+
+    docker commit $ContainerName $ImageName
+
+    if ($LASTEXITCODE -eq 0) {
+        Write-Host "✅ Container committed successfully as '$ImageName'!" -ForegroundColor Green
+    } else {
+        Write-Host "❌ Failed to commit container '$ContainerName'." -ForegroundColor Red
+    }
+}
+
+
+# Description:
+# Shows changes made to a container’s filesystem since it was created
+# Equivalent to 'docker diff'
+# Lists containers if no name is provided
+#
+# Usage:
+# dDiffContainer
+# dDiffContainer -ContainerName "my-container"
+function dDiffContainer {
+    param(
+        [string]$ContainerName
+    )
+
+    if ([string]::IsNullOrWhiteSpace($ContainerName)) {
+        Write-Host "📦 Available containers:" -ForegroundColor Cyan
+        docker ps -a --format "table {{.Names}}\t{{.Status}}"
+        Write-Host ""
+
+        $ContainerName = Read-Host "Enter the container name or ID to diff"
+    }
+
+    if ([string]::IsNullOrWhiteSpace($ContainerName)) {
+        Write-Host "❌ No container name provided." -ForegroundColor Red
+        return
+    }
+
+    Write-Host "📊 Showing filesystem changes for '$ContainerName'..." -ForegroundColor Cyan
+
+    docker diff $ContainerName
+}
+
+
+# Description:
+# Copies files or folders between host and Docker container
+# Supports both directions (host ↔ container)
+#
+# Usage:
+# dCpContainer
+# dCpContainer -Source "file.txt" -Destination "container:/app/file.txt"
+# dCpContainer -Source "container:/app/file.txt" -Destination "./file.txt"
+function dCpContainer {
+    param(
+        [string]$Source,
+        [string]$Destination
+    )
+
+    if ([string]::IsNullOrWhiteSpace($Source)) {
+        $Source = Read-Host "Enter source path (host or container)"
+    }
+
+    if ([string]::IsNullOrWhiteSpace($Destination)) {
+        $Destination = Read-Host "Enter destination path (host or container)"
+    }
+
+    if ([string]::IsNullOrWhiteSpace($Source) -or [string]::IsNullOrWhiteSpace($Destination)) {
+        Write-Host "❌ Missing source or destination path." -ForegroundColor Red
+        return
+    }
+
+    Write-Host "📁 Copying:" -ForegroundColor Cyan
+    Write-Host "$Source → $Destination"
+
+    docker cp $Source $Destination
+
+    if ($LASTEXITCODE -eq 0) {
+        Write-Host "✅ Copy completed successfully!" -ForegroundColor Green
+    } else {
+        Write-Host "❌ Copy operation failed." -ForegroundColor Red
+    }
+}
